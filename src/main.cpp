@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Shader.h"
+#include "Camera.h"
 
 using namespace std;
 
@@ -152,71 +153,51 @@ public:
 	ColoredVertexArray drawer;
 };
 
-class Camera
+class Avatar
 {	
 const float SENSITIVTY =  0.1f;
 public:
-	Camera()
+	Avatar() :
+		mPosition(glm::vec3(0.0f, 3.0f,  10.0f)),
+		mCamera(mPosition, 0.0f, -90.0f),
+		mMoveFront(glm::vec3(0.0f, 0.0f, -1.0f)),
+		mMoveRight(glm::vec3(1.0f, 0.0f,  0.0f))
 	{
-		cameraPos = glm::vec3(0.0f, 3.0f,  10.0f);
-		cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-		cameraUp = glm::vec3(0.0f, 1.0f,  0.0f);
-		cameraRight = glm::vec3(1.0f, 0.0f,  0.0f);;
-		pitch = 0.0f;
-		yaw = -90.0f;
 	}
 	
-	void forward(float speed)  { cameraPos += speed * cameraFront; }
-	void backward(float speed) { cameraPos -= speed * cameraFront; }
-	void left(float speed)     { cameraPos -= speed * cameraRight; }
-	void right(float speed)    { cameraPos += speed * cameraRight; }
+	void forward(float pSpeed)  { mPosition += pSpeed * mMoveFront; mCamera.setPosition(mPosition); }
+	void backward(float pSpeed) { mPosition -= pSpeed * mMoveFront; mCamera.setPosition(mPosition); }
+	void left(float pSpeed)     { mPosition -= pSpeed * mMoveRight; mCamera.setPosition(mPosition); }
+	void right(float pSpeed)    { mPosition += pSpeed * mMoveRight; mCamera.setPosition(mPosition); }
 	
-	void changeDirection(float xoffset, float yoffset)
+	void changeDirection(float pDeltaX, float pDeltaY)
 	{
-		pitch += yoffset * SENSITIVTY;
-		if (pitch > 89.0f) pitch = 89.0f;
-        if (pitch < -89.0f) pitch = -89.0f;
-		yaw += xoffset * SENSITIVTY;
+		mCamera.updateDirection(pDeltaX, pDeltaY);
 		
-		cout << xoffset << " " << yoffset << " " << pitch << " " << yaw << endl;
+		float yawRad = glm::radians(mCamera.yaw());
+		mMoveFront.x = cos(yawRad);
+        mMoveFront.y = 0.0f;
+        mMoveFront.z = sin(yawRad);
 		
-		glm::vec3 front;
-        front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-        front.y = sin(glm::radians(pitch));
-        front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-		
-		cout << front.x << " " << front.y << " " << front.z << endl;
-		
-        cameraFront = glm::normalize(front);
-        cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f,  0.0f)));
-        cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
+		mMoveFront = glm::normalize(mMoveFront);
+        mMoveRight = glm::normalize(glm::cross(mMoveFront, glm::vec3(0.0f, 1.0f,  0.0f)));
 	}
 	
 	glm::mat4 viewMatrix()
 	{
-		return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		return mCamera.viewMatrix();
 	}
 	
-	glm::vec3 cameraPos;
-	glm::vec3 cameraFront;
-	glm::vec3 cameraRight;
-	glm::vec3 cameraUp;
-	float pitch;
-	float yaw;
+	glm::vec3 mPosition;
+	glm::vec3 mMoveFront;
+	glm::vec3 mMoveRight;
+	Camera mCamera;
 };
 
-class Level
-{
-public:
-	Level()
-	{
-		
-	}
-};
 
 struct SceneData
 {
-	Camera camera;
+	Avatar avatar;
 	double prevx;
 	double prevy;
 	bool first;
@@ -227,13 +208,13 @@ static void keyboard_input(GLFWwindow* window, float deltaTime)
 	SceneData *data = (SceneData *)glfwGetWindowUserPointer(window);
 	float speed = deltaTime *  5.0f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		data->camera.forward(speed);
+		data->avatar.forward(speed);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		data->camera.backward(speed);
+		data->avatar.backward(speed);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		data->camera.left(speed);
+		data->avatar.left(speed);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		data->camera.right(speed);
+		data->avatar.right(speed);
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -245,7 +226,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 	}
 	else
 	{
-		data->camera.changeDirection(xpos - data->prevx, data->prevy - ypos);
+		data->avatar.changeDirection(xpos - data->prevx, data->prevy - ypos);
 	}	
 	data->prevx = xpos;
 	data->prevy = ypos;
@@ -347,7 +328,7 @@ int main(void)
 		float camZ = cos(glfwGetTime()) * radius;
 		// glm::mat4 view;
 		// view = glm::lookAt(glm::vec3(camX, 5.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));  
-		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.camera.viewMatrix()));
+		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
 		
 		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4()));
 		// glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(glm::mat4()));

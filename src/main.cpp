@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <list>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -28,7 +29,7 @@ struct Vertex
 class ColoredVertexArray
 {
 public:
-	ColoredVertexArray(){}
+	ColoredVertexArray(): mVAO(0), mNbIndexes(0), mNbVertices(0){} 
 	ColoredVertexArray(const Vertex *vertices, 
 					   unsigned int nb_vertices,
 					   const unsigned int *indexes, 
@@ -143,6 +144,7 @@ public:
 	void draw(Shader &shader)
 	{
 		glm::mat4 model;
+
 		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -153,16 +155,59 @@ public:
 	ColoredVertexArray drawer;
 };
 
+class Bullet
+{
+public:
+	Bullet() : mX(0.5f)
+	{
+	}
+	void draw(float pDeltaTime)
+	{
+		mX += pDeltaTime * 100.0f;
+		cout << mX << " " << pDeltaTime << endl;
+		glBegin(GL_QUADS);
+		glVertex3f(mX,-0.1f,-0.1f);
+		glVertex3f(mX,-0.1f, 0.1f);
+		glVertex3f(mX, 0.1f, 0.1f);
+		glVertex3f(mX, 0.1f,-0.1f);
+		glEnd();
+	}
+	float mX;
+};
+
 class Avatar
 {	
 const float SENSITIVTY =  0.1f;
 public:
 	Avatar() :
-		mPosition(glm::vec3(0.0f, 3.0f,  10.0f)),
+		mPosition(glm::vec3(0.0f, 2.0f,  10.0f)),
 		mCamera(mPosition, 0.0f, -90.0f),
 		mMoveFront(glm::vec3(0.0f, 0.0f, -1.0f)),
-		mMoveRight(glm::vec3(1.0f, 0.0f,  0.0f))
+		mMoveRight(glm::vec3(1.0f, 0.0f,  0.0f)),
+		mBullets()
 	{
+		Vertex weaponVtx[] = {
+			{ -0.5f,  0.05f,  0.05f,  0.0f, 0.2f, 0.5f },
+			{  0.5f,  0.05f,  0.05f,  0.0f, 0.2f, 0.5f },
+			{  0.5f, -0.05f,  0.05f,  0.0f, 0.2f, 0.5f },
+			{ -0.5f, -0.05f,  0.05f,  0.0f, 0.2f, 0.5f },
+			{ -0.5f,  0.05f, -0.05f,  0.0f, 0.2f, 0.5f },
+			{  0.5f,  0.05f, -0.05f,  0.0f, 0.2f, 0.5f },
+			{  0.5f, -0.05f, -0.05f,  0.0f, 0.2f, 0.5f },
+			{ -0.5f, -0.05f, -0.05f,  0.0f, 0.2f, 0.5f }
+		};
+		unsigned int indexes[] = 
+		{
+			0, 1, 2, 3,
+			1, 5, 6, 2,
+			5, 4, 7, 6,
+			4, 0, 3, 7,
+			0, 1, 5, 4,
+			3, 2, 6, 7
+		};
+		unsigned int nb_vertices = sizeof(weaponVtx) / sizeof(Vertex);
+		unsigned int nb_indexes = sizeof(indexes) / sizeof(unsigned int);
+		weapon = ColoredVertexArray(weaponVtx, nb_vertices, indexes, nb_indexes);
 	}
 	
 	void forward(float pSpeed)  { mPosition += pSpeed * mMoveFront; mCamera.setPosition(mPosition); }
@@ -180,7 +225,7 @@ public:
         mMoveFront.z = sin(yawRad);
 		
 		mMoveFront = glm::normalize(mMoveFront);
-        mMoveRight = glm::normalize(glm::cross(mMoveFront, glm::vec3(0.0f, 1.0f,  0.0f)));
+        mMoveRight = glm::normalize(glm::cross(mMoveFront, glm::vec3(0.0f, 1.0f, 0.0f)));
 	}
 	
 	glm::mat4 viewMatrix()
@@ -188,10 +233,46 @@ public:
 		return mCamera.viewMatrix();
 	}
 	
+	void shoot()
+	{
+		// Bullet b;
+		mBullets.push_back(Bullet());
+		// cout << "PIOU" << endl;
+		cout << '\a';
+	}
+	
+	void draw(Shader &pShader, float pDeltaTime)
+	{
+		glm::mat4 model;
+		model = glm::translate(model, mPosition + mMoveFront * 0.5f + mMoveRight * 0.3f + glm::vec3(0.0f, -0.3f, 0.0f));
+		model = glm::rotate(model, -glm::radians(mCamera.yaw()), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(mCamera.pitch()), glm::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(glGetUniformLocation(pShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+		weapon.draw(GL_QUADS);
+		
+		/* lazer */
+		glBegin(GL_LINES);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+		glVertex3f(100.0f, 0.0f, 0.0f);
+		glEnd();
+		
+		
+		for(auto it = mBullets.begin(); it != mBullets.end(); ++it)
+		{
+			it->draw(pDeltaTime);
+		}
+		while (!mBullets.empty() && mBullets.front().mX > 100.0)
+		{
+			mBullets.pop_front();
+		}
+	}
+	
 	glm::vec3 mPosition;
 	glm::vec3 mMoveFront;
 	glm::vec3 mMoveRight;
 	Camera mCamera;
+	ColoredVertexArray weapon;
+	list<Bullet> mBullets;
 };
 
 
@@ -201,6 +282,7 @@ struct SceneData
 	double prevx;
 	double prevy;
 	bool first;
+	float fov;
 };
 
 static void keyboard_input(GLFWwindow* window, float deltaTime)
@@ -215,6 +297,14 @@ static void keyboard_input(GLFWwindow* window, float deltaTime)
 		data->avatar.left(speed);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		data->avatar.right(speed);
+	
+	if (glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS)
+		data->fov += 5.0f;
+	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
+		data->fov -= 5.0f;
+	
+	if (data->fov < 5.0f) data->fov = 5.0f;
+	if (data->fov > 170.0f) data->fov = 170.0f;
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -232,13 +322,19 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 	data->prevy = ypos;
 }
 
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	SceneData *data = (SceneData *)glfwGetWindowUserPointer(window);
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        data->avatar.shoot();
+}
+
 int main(void)
 {
     GLFWwindow* window;
-	SceneData sceneData;
 	float curFrame = 0.0f;
 	float lastFrame = 0.0f;
-	sceneData.first = true;
+	float deltaTime = 0.0f;
 	
     /* Initialize the library */
     if (!glfwInit())
@@ -252,12 +348,17 @@ int main(void)
         return -1;
     }
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetWindowUserPointer(window, &sceneData);
 	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 	
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+	
+	SceneData sceneData;
+	sceneData.first = true;
+	sceneData.fov = 45.0;
+	glfwSetWindowUserPointer(window, &sceneData);
 	
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -306,40 +407,37 @@ int main(void)
 	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); 
 	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
-	
 	shader1.use();
-	glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(view));
 		
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
 		curFrame = glfwGetTime();
-		keyboard_input(window, curFrame - lastFrame);
+		deltaTime = curFrame - lastFrame;
 		lastFrame = curFrame;
+		keyboard_input(window, deltaTime);
 		
         /* Render here */
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		
 		float radius = 10.0f;
 		float camX = sin(glfwGetTime()) * radius;
 		float camZ = cos(glfwGetTime()) * radius;
-		// glm::mat4 view;
-		// view = glm::lookAt(glm::vec3(camX, 5.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));  
+		
+		glm::mat4 projection = glm::perspective(glm::radians(sceneData.fov), 800.0f/600.0f, 0.1f, 100.0f);	
+		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
 		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
-		
 		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4()));
-		// glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(glm::mat4()));
-		originObject.draw(GL_LINES);
 		
+		originObject.draw(GL_LINES);
 		grid.draw(shader1);
 		cube.draw(shader1);
 		
 		model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 		testObject.draw(GL_LINE_LOOP);
+		
+		sceneData.avatar.draw(shader1, deltaTime);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

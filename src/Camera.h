@@ -19,6 +19,7 @@ public:
 	inline void setSensitivity(float pSensitivity) { mSensitivity = pSensitivity; }
 	inline float pitch(){ return mPitch; }
 	inline float yaw(){ return mYaw; }
+	inline const glm::vec3 &front(){ return mFront; }
 	
 private:
 	void updateVectors();

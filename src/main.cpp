@@ -158,22 +158,57 @@ public:
 class Bullet
 {
 public:
-	Bullet() : mX(0.5f)
+	static int curId;
+	
+	Bullet(const glm::vec3 &pStartPos, const glm::vec3 &pTrajectory)
+	: mStartPos(pStartPos), mTrajectory(pTrajectory), mX(0.5)
 	{
+		mId = curId++;
+		Vertex vertices[] = {
+			{ -0.03f,  0.03f,  0.03f,  1.0f, 0.0f, 0.0f },
+			{  0.03f,  0.03f,  0.03f,  1.0f, 0.0f, 0.0f },
+			{  0.03f, -0.03f,  0.03f,  1.0f, 0.0f, 0.0f },
+			{ -0.03f, -0.03f,  0.03f,  1.0f, 0.0f, 0.0f },
+			{ -0.03f,  0.03f, -0.03f,  1.0f, 0.0f, 0.0f },
+			{  0.03f,  0.03f, -0.03f,  1.0f, 0.0f, 0.0f },
+			{  0.03f, -0.03f, -0.03f,  1.0f, 0.0f, 0.0f },
+			{ -0.03f, -0.03f, -0.03f,  1.0f, 0.0f, 0.0f }
+		};
+		unsigned int indexes[] = 
+		{
+			0, 1, 2, 3,
+			1, 5, 6, 2,
+			5, 4, 7, 6,
+			4, 0, 3, 7,
+			0, 1, 5, 4,
+			3, 2, 6, 7
+		};
+		unsigned int nb_vertices = sizeof(vertices) / sizeof(Vertex);
+		unsigned int nb_indexes = sizeof(indexes) / sizeof(unsigned int);
+		mBulletVertices = ColoredVertexArray(vertices, nb_vertices, indexes, nb_indexes);
 	}
-	void draw(float pDeltaTime)
+	void draw(Shader &pShader, float pDeltaTime)
 	{
 		mX += pDeltaTime * 100.0f;
-		cout << mX << " " << pDeltaTime << endl;
-		glBegin(GL_QUADS);
-		glVertex3f(mX,-0.1f,-0.1f);
-		glVertex3f(mX,-0.1f, 0.1f);
-		glVertex3f(mX, 0.1f, 0.1f);
-		glVertex3f(mX, 0.1f,-0.1f);
-		glEnd();
+		// cout << mX << " " << pDeltaTime << endl;
+		
+		glm::vec3 pos = mStartPos + mTrajectory * mX;
+		// cout << "#" << mId << " " << pos.x << " " << pos.y << " " << pos.z << endl;
+		
+		glm::mat4 model;
+		model = glm::translate(model, pos);
+		glUniformMatrix4fv(glGetUniformLocation(pShader.id(), "model"), 1, GL_FALSE, 
+			glm::value_ptr(model));
+		
+		mBulletVertices.draw(GL_QUADS);
 	}
+	int mId;
 	float mX;
+	ColoredVertexArray mBulletVertices;
+	glm::vec3 mTrajectory;
+	glm::vec3 mStartPos;
 };
+int Bullet::curId = 0;
 
 class Avatar
 {	
@@ -236,30 +271,30 @@ public:
 	void shoot()
 	{
 		// Bullet b;
-		mBullets.push_back(Bullet());
-		// cout << "PIOU" << endl;
+		mBullets.push_back(Bullet(mWeaponPos, mCamera.front()));
 		cout << '\a';
 	}
 	
 	void draw(Shader &pShader, float pDeltaTime)
 	{
 		glm::mat4 model;
-		model = glm::translate(model, mPosition + mMoveFront * 0.5f + mMoveRight * 0.3f + glm::vec3(0.0f, -0.3f, 0.0f));
+		mWeaponPos = mPosition + mMoveFront * 0.5f + mMoveRight * 0.3f + glm::vec3(0.0f, -0.3f, 0.0f);
+		model = glm::translate(model, mWeaponPos);
 		model = glm::rotate(model, -glm::radians(mCamera.yaw()), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(mCamera.pitch()), glm::vec3(0.0f, 0.0f, 1.0f));
+		
 		glUniformMatrix4fv(glGetUniformLocation(pShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 		weapon.draw(GL_QUADS);
 		
 		/* lazer */
-		glBegin(GL_LINES);
-		glVertex3f(0.0f, 0.0f, 0.0f);
-		glVertex3f(100.0f, 0.0f, 0.0f);
-		glEnd();
-		
+		// glBegin(GL_LINES);
+		// glVertex3f(0.0f, 0.0f, 0.0f);
+		// glVertex3f(100.0f, 0.0f, 0.0f);
+		// glEnd();
 		
 		for(auto it = mBullets.begin(); it != mBullets.end(); ++it)
 		{
-			it->draw(pDeltaTime);
+			it->draw(pShader, pDeltaTime);
 		}
 		while (!mBullets.empty() && mBullets.front().mX > 100.0)
 		{
@@ -272,6 +307,7 @@ public:
 	glm::vec3 mMoveRight;
 	Camera mCamera;
 	ColoredVertexArray weapon;
+	glm::vec3 mWeaponPos;
 	list<Bullet> mBullets;
 };
 
@@ -438,6 +474,7 @@ int main(void)
 		testObject.draw(GL_LINE_LOOP);
 		
 		sceneData.avatar.draw(shader1, deltaTime);
+		// cout << 1.0f / deltaTime << " FPS" << endl;
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

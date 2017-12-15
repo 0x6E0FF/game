@@ -115,17 +115,18 @@ public:
 class Cube
 {
 public:
-	Cube()
+	Cube(float size = 1.0f, float r = 1.0f, float g = 1.0f, float b = 1.0f)
 	{
+		float half = size / 2.0f;
 		Vertex vertices[] = {
-			{ -0.7f,  0.7f,  0.7f,  0.7f, 0.0f, 0.5f },
-			{  0.7f,  0.7f,  0.7f,  0.3f, 0.2f, 0.5f },
-			{  0.7f, -0.7f,  0.7f,  0.1f, 0.6f, 0.2f },
-			{ -0.7f, -0.7f,  0.7f,  0.7f, 0.7f, 0.5f },
-			{ -0.7f,  0.7f, -0.7f,  1.0f, 0.0f, 0.3f },
-			{  0.7f,  0.7f, -0.7f,  0.0f, 0.3f, 0.8f },
-			{  0.7f, -0.7f, -0.7f,  0.1f, 0.9f, 0.2f },
-			{ -0.7f, -0.7f, -0.7f,  0.5f, 0.0f, 0.7f }
+			{ -half,  half,  half,  r, g, b },
+			{  half,  half,  half,  r, g, b },
+			{  half, -half,  half,  r, g, b },
+			{ -half, -half,  half,  r, g, b },
+			{ -half,  half, -half,  r, g, b },
+			{  half,  half, -half,  r, g, b },
+			{  half, -half, -half,  r, g, b },
+			{ -half, -half, -half,  r, g, b }
 		};
 		unsigned int indexes[] = 
 		{
@@ -145,10 +146,6 @@ public:
 	{
 		glm::mat4 model;
 
-		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(glGetUniformLocation(shader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 		drawer.draw(GL_QUADS);
 	}
 	
@@ -436,7 +433,7 @@ int main(void)
 	ColoredVertexArray testObject(test, sizeof(test) / sizeof(Vertex), 0, 0);
 	
 	Grid grid(10, 1.0);
-	Cube cube;
+	Cube cube(1.4f, 0.0f, 0.0f);
 	
 	glm::mat4 model;
 	glm::mat4 view;
@@ -467,6 +464,11 @@ int main(void)
 		
 		originObject.draw(GL_LINES);
 		grid.draw(shader1);
+		
+		glm::mat4 model = glm::translate(glm::mat4(), glm::vec3(0.0f, 3.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 		cube.draw(shader1);
 		
 		model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));

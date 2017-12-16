@@ -18,19 +18,14 @@ using namespace std;
 
 struct Vertex
 {
-	float x;
-	float y;
-	float z;
-	float r;
-	float g;
-	float b;
+	float values[6];
 };
 
-class ColoredVertexArray
+class VertexArray
 {
 public:
-	ColoredVertexArray(): mVAO(0), mNbIndexes(0), mNbVertices(0){} 
-	ColoredVertexArray(const Vertex *vertices, 
+	VertexArray(): mVAO(0), mNbIndexes(0), mNbVertices(0){} 
+	VertexArray(const Vertex *vertices, 
 					   unsigned int nb_vertices,
 					   const unsigned int *indexes, 
 					   unsigned int nb_indexes)
@@ -99,7 +94,7 @@ public:
 			*vertex_cur = { min + i * increment, 0.0f, max, 1.0f - (float)i/nb, 0.0f, (float)i/nb}; vertex_cur++;
 		}	
 		
-		drawer = ColoredVertexArray(vertices, nb_vertices, 0, 0);
+		drawer = VertexArray(vertices, nb_vertices, 0, 0);
 		delete vertices;
 	}
 	
@@ -109,7 +104,7 @@ public:
 		glUniformMatrix4fv(glGetUniformLocation(shader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 		drawer.draw(GL_LINES);
 	}
-	ColoredVertexArray drawer;
+	VertexArray drawer;
 };
 
 class Cube
@@ -119,37 +114,60 @@ public:
 	{
 		float half = size / 2.0f;
 		Vertex vertices[] = {
-			{ -half,  half,  half,  r, g, b },
-			{  half,  half,  half,  r, g, b },
-			{  half, -half,  half,  r, g, b },
-			{ -half, -half,  half,  r, g, b },
-			{ -half,  half, -half,  r, g, b },
-			{  half,  half, -half,  r, g, b },
-			{  half, -half, -half,  r, g, b },
-			{ -half, -half, -half,  r, g, b }
-		};
-		unsigned int indexes[] = 
-		{
-			0, 1, 2, 3,
-			1, 5, 6, 2,
-			5, 4, 7, 6,
-			4, 0, 3, 7,
-			0, 1, 5, 4,
-			3, 2, 6, 7
+			/* front face */
+			{ -half,  half,  half,  0.0f, 0.0f, 1.0f },
+			{  half,  half,  half,  0.0f, 0.0f, 1.0f },
+			{  half, -half,  half,  0.0f, 0.0f, 1.0f },
+			{ -half, -half,  half,  0.0f, 0.0f, 1.0f },
+		
+			/* right face */
+			{  half,  half,  half,  1.0f, 0.0f, 0.0f },
+			{  half,  half, -half,  1.0f, 0.0f, 0.0f },
+			{  half, -half, -half,  1.0f, 0.0f, 0.0f },
+			{  half, -half,  half,  1.0f, 0.0f, 0.0f },
+			
+			/* back face */
+			{ -half,  half, -half,  0.0f, 0.0f, -1.0f },
+			{  half,  half, -half,  0.0f, 0.0f, -1.0f },
+			{  half, -half, -half,  0.0f, 0.0f, -1.0f },
+			{ -half, -half, -half,  0.0f, 0.0f, -1.0f },
+			
+			/* left face */
+			{  -half,  half,  half, -1.0f, 0.0f, 0.0f },
+			{  -half,  half, -half, -1.0f, 0.0f, 0.0f },
+			{  -half, -half, -half, -1.0f, 0.0f, 0.0f },
+			{  -half, -half,  half, -1.0f, 0.0f, 0.0f },
+			
+			/* top face */
+			{   half,  half,  half, 0.0f, 1.0f, 0.0f },
+			{  -half,  half,  half, 0.0f, 1.0f, 0.0f },
+			{  -half,  half, -half, 0.0f, 1.0f, 0.0f },
+			{   half,  half, -half, 0.0f, 1.0f, 0.0f },
+			
+			/* bottom face */
+			{   half, -half,  half, 0.0f, -1.0f, 0.0f },
+			{  -half, -half,  half, 0.0f, -1.0f, 0.0f },
+			{  -half, -half, -half, 0.0f, -1.0f, 0.0f },
+			{   half, -half, -half, 0.0f, -1.0f, 0.0f }
 		};
 		unsigned int nb_vertices = sizeof(vertices) / sizeof(Vertex);
-		unsigned int nb_indexes = sizeof(indexes) / sizeof(unsigned int);
-		drawer = ColoredVertexArray(vertices, nb_vertices, indexes, nb_indexes);
+		mDrawer = VertexArray(vertices, nb_vertices, NULL, 0);
+		
+		mR = r;
+		mG = g;
+		mB = b;
 	}
 	
-	void draw(Shader &shader)
+	void draw(Shader &pShader)
 	{
-		glm::mat4 model;
-
-		drawer.draw(GL_QUADS);
+		glUniform3f(glGetUniformLocation(pShader.id(), "color"), mR, mG, mB);
+		mDrawer.draw(GL_QUADS);
 	}
 	
-	ColoredVertexArray drawer;
+	VertexArray mDrawer;
+	float mR;
+	float mG;
+	float mB;
 };
 
 class Bullet
@@ -182,7 +200,7 @@ public:
 		};
 		unsigned int nb_vertices = sizeof(vertices) / sizeof(Vertex);
 		unsigned int nb_indexes = sizeof(indexes) / sizeof(unsigned int);
-		mBulletVertices = ColoredVertexArray(vertices, nb_vertices, indexes, nb_indexes);
+		mBulletVertices = VertexArray(vertices, nb_vertices, indexes, nb_indexes);
 	}
 	void draw(Shader &pShader, float pDeltaTime)
 	{
@@ -201,7 +219,7 @@ public:
 	}
 	int mId;
 	float mX;
-	ColoredVertexArray mBulletVertices;
+	VertexArray mBulletVertices;
 	glm::vec3 mTrajectory;
 	glm::vec3 mStartPos;
 };
@@ -239,7 +257,7 @@ public:
 		};
 		unsigned int nb_vertices = sizeof(weaponVtx) / sizeof(Vertex);
 		unsigned int nb_indexes = sizeof(indexes) / sizeof(unsigned int);
-		weapon = ColoredVertexArray(weaponVtx, nb_vertices, indexes, nb_indexes);
+		weapon = VertexArray(weaponVtx, nb_vertices, indexes, nb_indexes);
 	}
 	
 	void forward(float pSpeed)  { mPosition += pSpeed * mMoveFront; mCamera.setPosition(mPosition); }
@@ -303,7 +321,7 @@ public:
 	glm::vec3 mMoveFront;
 	glm::vec3 mMoveRight;
 	Camera mCamera;
-	ColoredVertexArray weapon;
+	VertexArray weapon;
 	glm::vec3 mWeaponPos;
 	list<Bullet> mBullets;
 };
@@ -401,7 +419,9 @@ int main(void)
 	char *ver = (char *)glGetString(GL_VERSION);
 	cout << ver << endl;
 	
-	Shader shader1 = Shader("src/shader.vert","src/shader.frag");
+	Shader vertColorShader = Shader("src/shader.vert","src/shader.frag");
+	Shader lightingShader = Shader("src/lighting.vert","src/lighting.frag");
+	Shader lightSourceShader = Shader("src/lightSource.vert","src/lightSource.frag");
 
 	Vertex ground[] = {
         {-100.0f, 0.0f, -100.0f,   1.0f, 0.0f, 0.0f },
@@ -428,20 +448,26 @@ int main(void)
 	   { -0.5f,  0.5f, 0.0f,   0.0f, 1.0f, 1.0f }
 	};
 	
-	// ColoredVertexArray groundObject(ground, sizeof(ground) / sizeof(Vertex));
-	ColoredVertexArray originObject(origin, sizeof(origin) / sizeof(Vertex), 0, 0);
-	ColoredVertexArray testObject(test, sizeof(test) / sizeof(Vertex), 0, 0);
+	// VertexArray groundObject(ground, sizeof(ground) / sizeof(Vertex));
+	VertexArray originObject(origin, sizeof(origin) / sizeof(Vertex), 0, 0);
+	VertexArray testObject(test, sizeof(test) / sizeof(Vertex), 0, 0);
 	
 	Grid grid(10, 1.0);
 	Cube cube(1.4f, 0.0f, 0.0f);
 	
-	glm::mat4 model;
-	glm::mat4 view;
-	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); 
-	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	Cube lightSource(0.5f);
 	
-	shader1.use();
+	glm::mat4 testObjModel;
+	glm::mat4 testCubeModel;
+	glm::mat4 view;
+	glm::mat4 model;
+	testObjModel = glm::translate(testObjModel, glm::vec3(0.0f, -1.0f, 0.0f)); 
+	testObjModel = glm::rotate(testObjModel, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	
+	testCubeModel = glm::translate(glm::mat4(), glm::vec3(0.0f, 3.0f, 0.0f));
 		
+	glm::mat4 projection = glm::perspective(glm::radians(sceneData.fov), 800.0f/600.0f, 0.1f, 100.0f);	
+	
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
@@ -457,27 +483,44 @@ int main(void)
 		float camX = sin(glfwGetTime()) * radius;
 		float camZ = cos(glfwGetTime()) * radius;
 		
-		glm::mat4 projection = glm::perspective(glm::radians(sceneData.fov), 800.0f/600.0f, 0.1f, 100.0f);	
-		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
-		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
-		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4()));
+		/* Colored Vertex shader */
+		/*-----------------------*/
+		vertColorShader.use();
+		glUniformMatrix4fv(glGetUniformLocation(vertColorShader.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
+		glUniformMatrix4fv(glGetUniformLocation(vertColorShader.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
+		glUniformMatrix4fv(glGetUniformLocation(vertColorShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4()));
 		
 		originObject.draw(GL_LINES);
-		grid.draw(shader1);
+		grid.draw(vertColorShader);
 		
-		glm::mat4 model = glm::translate(glm::mat4(), glm::vec3(0.0f, 3.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
-		cube.draw(shader1);
-		
-		model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(glGetUniformLocation(shader1.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+		testObjModel = glm::rotate(testObjModel, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(glGetUniformLocation(vertColorShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(testObjModel));
 		testObject.draw(GL_LINE_LOOP);
 		
-		sceneData.avatar.draw(shader1, deltaTime);
-		// cout << 1.0f / deltaTime << " FPS" << endl;
-
+		sceneData.avatar.draw(vertColorShader, deltaTime);
+		
+		/* lightSource shader */
+		/*--------------------*/
+		lightSourceShader.use();
+		glUniformMatrix4fv(glGetUniformLocation(lightSourceShader.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
+		glUniformMatrix4fv(glGetUniformLocation(lightSourceShader.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
+		model = glm::translate(glm::mat4(), glm::vec3(5.0f, 5.0f, 5.0f));
+		glUniformMatrix4fv(glGetUniformLocation(lightSourceShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+		lightSource.draw(lightSourceShader);
+		
+		/* lighting shader */
+		/*-----------------*/
+		lightingShader.use();
+		glUniform3f(glGetUniformLocation(lightingShader.id(), "lightPos"), 5.0f, 5.0f, 5.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.id(), "lightColor"), 1.0f, 1.0f, 1.0f);
+		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
+		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
+		
+		testCubeModel = glm::rotate(testCubeModel, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+		testCubeModel = glm::rotate(testCubeModel, glm::radians(0.3f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(testCubeModel));
+		cube.draw(lightingShader);
+		
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 

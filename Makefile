@@ -3,7 +3,7 @@ TARGET=$(BUILD_DIR)/game.exe
 
 C_FLAGS=-g
 CPP_FLAGS=-g -std=c++11
-LD_FLAGS=
+LD_FLAGS=-static-libgcc -static-libstdc++
 
 SRCS=$(wildcard src/*.cpp)
 OBJS=$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SRCS)) lib/glad/glad.o

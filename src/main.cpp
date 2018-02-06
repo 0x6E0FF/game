@@ -192,6 +192,23 @@ int main(void)
 		lastFrame = curFrame;
 		keyboard_input(window, deltaTime);
 		
+		/* compute bullets and enemies collisions */
+		list<vector<Enemy>::iterator> killed;
+		for(auto enemy_it = enemies.begin(); enemy_it != enemies.end(); ++enemy_it)
+		{
+			for (auto bullet_it = sceneData.avatar.bullets_begin(); bullet_it != sceneData.avatar.bullets_end(); ++bullet_it)
+			{
+				if (enemy_it->collide(bullet_it->pos()))
+				{
+					killed.push_back(enemy_it);
+				}
+			}
+		}
+		for (auto enemy_it = killed.begin(); enemy_it != killed.end(); ++enemy_it)
+		{
+			enemies.erase(*enemy_it);
+		}
+
         /* Render here */
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
@@ -222,10 +239,10 @@ int main(void)
 		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
 		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
 		
-		sceneData.avatar.draw(vertColorShader, deltaTime);
+		sceneData.avatar.draw(lightingShader, deltaTime);
 		
-		testCubeModel = glm::rotate(testCubeModel, glm::radians(0.01f), glm::vec3(0.0f, 0.0f, 1.0f));
-		testCubeModel = glm::rotate(testCubeModel, glm::radians(0.01f), glm::vec3(1.0f, 0.0f, 0.0f));
+		testCubeModel = glm::rotate(testCubeModel, glm::radians(deltaTime * 10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		testCubeModel = glm::rotate(testCubeModel, glm::radians(deltaTime * 10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(testCubeModel));
 		cube.draw(lightingShader);
 		

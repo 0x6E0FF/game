@@ -15,7 +15,7 @@ Avatar::Avatar() :
 		mMoveFront(glm::vec3(0.0f, 0.0f, -1.0f)),
 		mMoveRight(glm::vec3(1.0f, 0.0f,  0.0f)),
 		mBullets(),
-		mWeapon(1.0f, 0.1f, 0.1f, 0.5f, 0.5f, 0.5f)
+		mWeapon(1.0f, 0.1f, 0.1f, 0.0f, 1.0f, 0.0f)
 {
 }
 
@@ -64,7 +64,7 @@ void Avatar::draw(Shader &pShader, float pDeltaTime)
 	{
 		it->draw(pShader, pDeltaTime);
 	}
-	while (!mBullets.empty() && mBullets.front().x() > 100.0)
+	while (!mBullets.empty() && mBullets.front().dist() > 100.0)
 	{
 		mBullets.pop_front();
 	}

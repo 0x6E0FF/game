@@ -17,3 +17,19 @@ void Enemy::draw(Shader &pShader)
 	glUniformMatrix4fv(glGetUniformLocation(pShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 	mVolume.draw(pShader);
 }
+
+bool Enemy::collide(float pX, float pY, float pZ)
+{
+	glm::vec3 p(pX - mX, pY - 0.5f, pZ - mY);
+	float halfX = mVolume.sizeX() / 2.0f;
+	float halfY = mVolume.sizeY() / 2.0f;
+	float halfZ = mVolume.sizeZ() / 2.0f;
+	return p.x > -halfX && p.x < halfX &&
+		   p.y > -halfY && p.y < halfY &&
+		   p.z > -halfZ && p.z < halfZ;
+}
+
+bool Enemy::collide(glm::vec3 pPos)
+{
+	return collide(pPos.x, pPos.y, pPos.z);
+}

@@ -2,7 +2,7 @@ BUILD_DIR=build
 TARGET=$(BUILD_DIR)/game.exe
 
 C_FLAGS=-g
-CPP_FLAGS=-g -std=c++11
+CPP_FLAGS=-g -std=c++11 -MMD
 LD_FLAGS=-static-libgcc -static-libstdc++
 
 SRCS=$(wildcard src/*.cpp)
@@ -29,7 +29,9 @@ LIBS=-Llib/$(GLFW)/lib-mingw\
 	 -lopengl32
 
 all: $(PRECOMPILED_HEADERS) $(TARGET)
-	 
+
+-include $(patsubst %.cpp,$(BUILD_DIR)/%.d,$(SRCS))
+
 $(BUILD_DIR)/%.o : %.cpp
 	@mkdir -p $(dir $@)
 	g++ $(CPP_FLAGS) $(INCS) -c $< -o $@

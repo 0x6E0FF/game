@@ -23,6 +23,10 @@ public:
 	void shoot();
 	void draw(Shader &pShader, float pDeltaTime);
 	
+
+	std::list<Bullet>::const_iterator bullets_begin() const { return mBullets.begin(); }
+	std::list<Bullet>::const_iterator bullets_end() const { return mBullets.end(); }
+
 	inline glm::mat4 viewMatrix() { return mCamera.viewMatrix(); }
 	
 private:

@@ -4,6 +4,7 @@
 #include "Shader.h"
 
 Object::Object(float sizeX, float sizeY, float sizeZ, float r, float g, float b)
+	: mSizeX(sizeX), mSizeY(sizeY), mSizeZ(sizeZ), mR(r), mG(g), mB(b)
 {
 	float halfX = sizeX / 2.0f;
 	float halfY = sizeY / 2.0f;
@@ -47,10 +48,6 @@ Object::Object(float sizeX, float sizeY, float sizeZ, float r, float g, float b)
 	};
 	unsigned int nb_vertices = sizeof(vertices) / sizeof(Vertex);
 	mDrawer = VertexArray(vertices, nb_vertices, NULL, 0);
-	
-	mR = r;
-	mG = g;
-	mB = b;
 }
 
 void Object::draw(Shader &pShader)

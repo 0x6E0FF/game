@@ -11,10 +11,11 @@ public:
 	static int curId;
 	Bullet(const glm::vec3 &pStartPos, const glm::vec3 &pTrajectory);
 	void draw(Shader &pShader, float pDeltaTime);
-	inline float x() const { return mX; }
+	inline float dist() const { return mDist; }
+	inline glm::vec3 pos() const { return mStartPos + mTrajectory * mDist; }
 private:
 	int mId;
-	float mX;
+	float mDist;
 	Object mBullet;
 	glm::vec3 mTrajectory;
 	glm::vec3 mStartPos;

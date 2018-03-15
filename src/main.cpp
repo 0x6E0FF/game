@@ -5,6 +5,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <cmath>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -19,6 +20,12 @@
 #include "Camera.h"
 #include "Avatar.h"
 #include "Enemy.h"
+#include "Level.h"
+
+#define M_PI 3.14159265359f
+
+#define WIDTH 1440.0f
+#define HEIGHT 900.0f
 
 using namespace std;
 
@@ -37,13 +44,13 @@ public:
 		vertex_cur = vertices;
 		for(int i = 0; i <= nb; ++i)
 		{
-			*vertex_cur = { min, 0.0f, min + i * increment, (float)i/nb, 1.0f - (float)i/nb, 0.0f}; vertex_cur++;
-			*vertex_cur = { max, 0.0f, min + i * increment, (float)i/nb, 1.0f - (float)i/nb, 0.0f}; vertex_cur++;
+			*vertex_cur = { min, 0.1f, min + i * increment, (float)i/nb, 1.0f - (float)i/nb, 0.0f}; vertex_cur++;
+			*vertex_cur = { max, 0.1f, min + i * increment, (float)i/nb, 1.0f - (float)i/nb, 0.0f}; vertex_cur++;
 		}	
 		for(int i = 0; i <= nb; ++i)
 		{
-			*vertex_cur = { min + i * increment, 0.0f, min, 1.0f - (float)i/nb, 0.0f, (float)i/nb}; vertex_cur++;
-			*vertex_cur = { min + i * increment, 0.0f, max, 1.0f - (float)i/nb, 0.0f, (float)i/nb}; vertex_cur++;
+			*vertex_cur = { min + i * increment, 0.1f, min, 1.0f - (float)i/nb, 0.0f, (float)i/nb}; vertex_cur++;
+			*vertex_cur = { min + i * increment, 0.1f, max, 1.0f - (float)i/nb, 0.0f, (float)i/nb}; vertex_cur++;
 		}	
 		
 		drawer = VertexArray(vertices, nb_vertices, 0, 0);
@@ -124,7 +131,7 @@ int main(void)
         return -1;
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(800, 600, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Hello World", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -168,21 +175,25 @@ int main(void)
 	
 	VertexArray originObject(origin, sizeof(origin) / sizeof(Vertex), 0, 0);
 	
-	Grid grid(10, 1.0);
+	Grid grid(50, 1.0);
 	Object cube(1.4f, 1.4f, 1.4f, 0.0f, 0.0f, 1.0f);
 	Object lightSource(0.5f);
 	glm::mat4 testCubeModel;
 	glm::mat4 view;
 	glm::mat4 model;
 	vector<Enemy> enemies;
-	
 	for (int i = 0; i < 10; i++)
 	{
 		enemies.push_back(Enemy(float(25 - rand() % 50), float(25 - rand() % 50)));
 	}
 	
 	testCubeModel = glm::translate(glm::mat4(), glm::vec3(0.0f, 3.0f, 0.0f));
-	glm::mat4 projection = glm::perspective(glm::radians(sceneData.fov), 800.0f/600.0f, 0.1f, 100.0f);	
+	glm::mat4 projection = glm::perspective(glm::radians(sceneData.fov), WIDTH/HEIGHT, 0.1f, 100.0f);	
+	
+	Level level("resources/test.pbm");
+	sceneData.avatar.setLevel(&level);
+	
+	float lightSourceAngle = 0.0f;
 	
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -191,7 +202,7 @@ int main(void)
 		deltaTime = curFrame - lastFrame;
 		lastFrame = curFrame;
 		keyboard_input(window, deltaTime);
-		
+				
 		/* compute bullets and enemies collisions */
 		list<vector<Enemy>::iterator> killed;
 		for(auto enemy_it = enemies.begin(); enemy_it != enemies.end(); ++enemy_it)
@@ -227,17 +238,26 @@ int main(void)
 		lightSourceShader.use();
 		glUniformMatrix4fv(glGetUniformLocation(lightSourceShader.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
 		glUniformMatrix4fv(glGetUniformLocation(lightSourceShader.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
-		model = glm::translate(glm::mat4(), glm::vec3(5.0f, 5.0f, 5.0f));
+		
+		lightSourceAngle += deltaTime * 1.0f;
+		if (lightSourceAngle > 2*M_PI)
+			lightSourceAngle = 0.0f;
+		float lightX = cos(lightSourceAngle) * 5.0f;
+		float lightY = 5.0f;
+		float lightZ = sin(lightSourceAngle) * 5.0f;
+		model = glm::translate(glm::mat4(), glm::vec3(lightX, lightY, lightZ));
 		glUniformMatrix4fv(glGetUniformLocation(lightSourceShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 		lightSource.draw(lightSourceShader);
 		
 		/* lighting shader */
 		/*-----------------*/
 		lightingShader.use();
-		glUniform3f(glGetUniformLocation(lightingShader.id(), "lightPos"), 5.0f, 5.0f, 5.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.id(), "lightPos"), lightX, lightY, lightZ);
 		glUniform3f(glGetUniformLocation(lightingShader.id(), "lightColor"), 1.0f, 1.0f, 1.0f);
 		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));	
 		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "view"), 1, GL_FALSE, glm::value_ptr(sceneData.avatar.viewMatrix()));
+		
+		level.draw(lightingShader);
 		
 		sceneData.avatar.draw(lightingShader, deltaTime);
 		

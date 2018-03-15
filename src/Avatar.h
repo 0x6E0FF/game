@@ -6,8 +6,10 @@
 #include "Bullet.h"
 #include "glm/vec3.hpp"
 #include <list>
+#include <string>
 
 class Shader;
+class Level;
 class Avatar
 {
 public:
@@ -23,13 +25,15 @@ public:
 	void shoot();
 	void draw(Shader &pShader, float pDeltaTime);
 	
-
-	std::list<Bullet>::const_iterator bullets_begin() const { return mBullets.begin(); }
-	std::list<Bullet>::const_iterator bullets_end() const { return mBullets.end(); }
-
+	void setLevel(Level *pLevel);
+	
+	inline std::list<Bullet>::const_iterator bullets_begin() const { return mBullets.begin(); }
+	inline std::list<Bullet>::const_iterator bullets_end() const { return mBullets.end(); }
 	inline glm::mat4 viewMatrix() { return mCamera.viewMatrix(); }
 	
 private:
+	void updatePosition(glm::vec3 pMoveVector);
+
 	glm::vec3 mPosition;
 	glm::vec3 mMoveFront;
 	glm::vec3 mMoveRight;
@@ -37,6 +41,7 @@ private:
 	Object mWeapon;
 	glm::vec3 mWeaponPos;
 	std::list<Bullet> mBullets;
+	Level *mLevel;
 };
 
 #endif /* __AVATAR_H__ */

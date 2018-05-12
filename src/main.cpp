@@ -193,6 +193,8 @@ int main(void)
 	Level level("resources/test.pbm");
 	sceneData.avatar.setLevel(&level);
 	
+	Object impact(0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 0.0f);
+	
 	float lightSourceAngle = 0.0f;
 	
     /* Loop until the user closes the window */
@@ -270,6 +272,16 @@ int main(void)
 		{
 			it->draw(lightingShader);
 		}
+		
+		/* sight -> wall intersection */
+		glm::vec3 start = sceneData.avatar.position();
+		glm::vec3 end = sceneData.avatar.position() + sceneData.avatar.direction() * 1000.0f;
+		glm::vec3 impactPos = level.intersectWall(start, end);
+		cout << impactPos.x << " " << impactPos.z << endl;
+		
+		glm::mat4 impactModel = glm::translate(glm::mat4(), impactPos);
+		glUniformMatrix4fv(glGetUniformLocation(lightingShader.id(), "model"), 1, GL_FALSE, glm::value_ptr(impactModel));
+		impact.draw(lightingShader);
 		
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

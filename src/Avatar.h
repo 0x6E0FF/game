@@ -31,6 +31,9 @@ public:
 	inline std::list<Bullet>::const_iterator bullets_end() const { return mBullets.end(); }
 	inline glm::mat4 viewMatrix() { return mCamera.viewMatrix(); }
 	
+	inline const glm::vec3 &position() const { return mPosition; }
+	inline const glm::vec3 &direction() const { return mCamera.front(); }
+	
 private:
 	void updatePosition(glm::vec3 pMoveVector);
 

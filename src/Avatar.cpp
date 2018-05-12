@@ -60,78 +60,7 @@ void Avatar::updatePosition(glm::vec3 pMoveVector)
 		// mCamera.setPosition(mPosition);		
 	// }
 	
-	// glm::vec2 p1, p2, p3;
-	// p1.x = mPosition.x;
-	// p1.y = mPosition.z;
-	// p2.x = lNewPos.x;
-	// p2.y = lNewPos.z;
-	
-	// float dx = p2.x - p1.x;
-	// float dy = p2.y - p1.y;
-	
-	// int next_x = (int)(p1.x + ((dx < 0) ? 0.0 : 1.0));
-	// int next_y = (int)(p1.y + ((dy < 0) ? 0.0 : 1.0));
-	
-	// while ( ((dx < 0 && p1.x >= p2.x) || (dx >= 0 && p1.x <= p2.x))
-       	 // || ((dy < 0 && p1.y >= p2.y) || (dy >= 0 && p1.y <= p2.y)))
-	// {
-		// if (dx == 0.0)
-		// {
-			// p3.x = p1.x;
-			// p2.y = next_y;
-			// next_y += (dy < 0) ? -1 : 1;
-		// }
-		// else if (dy == 0.0)
-		// {
-			// p3.x = next_x;
-			// p3.y = p1.y;
-			// next_x += (dx < 0) ? -1 : 1;
-		// }
-		// else 
-		// {
-			// /* general case : compute next intersection of line with the grid */
-			
-			// /* first, try fixing x and compute y with line equation : */
-			// /*            dy
-			 // *  y - y1 = ---- . (x - x1)
-			 // *            dx 
-			 // */
-			// p3.x = next_x;
-			// p3.y = (dy / dx) * (p3.x - p1.x) + p1.y;
 
-			// /* if computed point doesn't lie on current cell border, retry with fixed y */
-			// if ((dy <  0 && p3.y <  next_y)
-			 // || (dy >= 0 && p3.y >= next_y))
-			// {
-				// p3.y = next_y;
-				// p3.x = (dx / dy) * (p3.y - p1.y) + p1.x;
-				
-				// next_y += (dy < 0) ? -1 : 1;
-			// }
-			// else
-			// {
-				// next_x += (dx < 0) ? -1 : 1;
-			// }
-		// }
-		
-		// /* cell coordinates */
-		// int x = (int)p3.x + mLevel->width() / 2;
-		// int y = (int)p3.y + mLevel->height() / 2;
-		// if (dx < 0 && (float)x == p1.x)
-			// x--;
-		// if (dy < 0 && (float)y == p1.y)
-			// y--;
-		
-		// if (mLevel->map()[y * mLevel->width() + x] == '1')
-		// {
-			// mPosition.x = p3.x;
-			// mPosition.z = p3.y;
-			// mCamera.setPosition(mPosition);
-			// cout << "cap to " << x << " " << y << endl;
-			// return;
-		// }
-		// p1 = p3;
-	// }
 	// cout << "move " << dx << " "  << dy << endl;
 	mPosition = lNewPos;
 	mCamera.setPosition(mPosition);

@@ -2,6 +2,7 @@
 #define __LEVEL_H__
 
 #include "VertexArray.h"
+#include "glm/vec3.hpp"
 #include <string>
 
 class Shader;
@@ -12,6 +13,8 @@ public:
 	Level(const char *pPBMFile);
 	
 	void draw(Shader &pShader);
+	
+	glm::vec3 intersectWall(glm::vec3 &pStart, glm::vec3 &pEnd);
 	
 	inline const std::string &map() const { return mMap; }
 	inline int width() const { return mW; }

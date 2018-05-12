@@ -11,6 +11,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <iostream>
+
 using namespace std;
 
 Level::Level(const char *pPBMFile)
@@ -137,4 +139,98 @@ void Level::draw(Shader &pShader)
 	glUniform3f(glGetUniformLocation(pShader.id(), "color"), 0.15f, 0.15f, 0.1f);
 	walls.draw(GL_QUADS);
 	roof.draw(GL_QUADS);
+}
+
+glm::vec3 Level::intersectWall(glm::vec3 &pStart, glm::vec3 &pEnd)
+{
+	glm::vec3 ret;
+	glm::vec2 p1, p2, p3;
+	p1.x = pStart.x;
+	p1.y = pStart.z;
+	p2.x = pEnd.x;
+	p2.y = pEnd.z;
+	
+	float dx = p2.x - p1.x;
+	float dy = p2.y - p1.y;
+	
+	int next_x = (int)(p1.x + ((dx < 0) ? 0.0 : 1.0));
+	int next_y = (int)(p1.y + ((dy < 0) ? 0.0 : 1.0));
+	
+	while ( ((dx < 0 && p1.x > p2.x) || (dx >= 0 && p1.x < p2.x))
+       	 || ((dy < 0 && p1.y > p2.y) || (dy >= 0 && p1.y < p2.y)))
+	{
+		if (dx == 0.0)
+		{
+			p3.x = p1.x;
+			p3.y = next_y;
+			next_y += (dy < 0) ? -1 : 1;
+		}
+		else if (dy == 0.0)
+		{
+			p3.x = next_x;
+			p3.y = p1.y;
+			next_x += (dx < 0) ? -1 : 1;
+		}
+		else 
+		{
+			/* general case : compute next intersection of line with the grid */
+			
+			/* first, try fixing x and compute y with line equation : */
+			/*            dy
+			 *  y - y1 = ---- . (x - x1)
+			 *            dx 
+			 */
+			p3.x = next_x;
+			p3.y = (dy / dx) * (p3.x - p1.x) + p1.y;
+
+			/* if computed point doesn't lie on current cell border, retry with fixed y */
+			if ((dy <  0 && p3.y <  next_y)
+			 || (dy >= 0 && p3.y >= next_y))
+			{
+				p3.y = next_y;
+				p3.x = (dx / dy) * (p3.y - p1.y) + p1.x;
+				
+				next_y += (dy < 0) ? -1 : 1;
+			}
+			else
+			{
+				next_x += (dx < 0) ? -1 : 1;
+			}
+		}
+		
+		/* cell coordinates */
+		int x = (int)p3.x;
+		int y = (int)p3.y;
+		
+		if (dx < 0 && (float)x == p3.x)
+			x--;
+		if (dy < 0 && (float)y == p3.y)
+			y--;
+		
+		x += mW / 2;
+		y += mH / 2;
+		if (x < 0 || y < 0 || x >= mW || y >= mH || mMap[y * mW + x] == '1')
+		{
+			// if (dx < 0 && dy < 0)
+				// p3 = p1;
+				
+			break;
+		}
+		p1 = p3;
+	}
+	
+	ret.x = p3.x;
+	ret.z = p3.y;
+	ret.y = pStart.y;
+	
+	glm::vec3 e = pEnd;
+	e.y = pStart.y;
+	
+	/* Thales theorem */
+	float d1 = glm::distance(pStart, e);
+	float d2 = glm::distance(pStart, ret);
+	
+	ret.y += d2 * (pEnd.y - pStart.y) / d1;
+	
+	return ret;
 }

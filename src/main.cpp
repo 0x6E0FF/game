@@ -75,10 +75,20 @@ struct SceneData
 	float fov;
 };
 
+static int max_framerate = 60;
+static float speed_factor = 5.0F;
+static bool print_framerate = false;
+
 static void keyboard_input(GLFWwindow* window, float deltaTime)
 {
 	SceneData *data = (SceneData *)glfwGetWindowUserPointer(window);
-	float speed = deltaTime *  5.0f;
+	
+    if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
+		speed_factor -= 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
+		speed_factor += 1.0f;
+	
+	float speed = deltaTime *  speed_factor;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		data->avatar.forward(speed);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -92,6 +102,13 @@ static void keyboard_input(GLFWwindow* window, float deltaTime)
 		data->fov += 5.0f;
 	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
 		data->fov -= 5.0f;
+	
+    if (glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS)
+		print_framerate ^= 1;
+    if (glfwGetKey(window, GLFW_KEY_F6) == GLFW_PRESS)
+		max_framerate -= 1;
+    if (glfwGetKey(window, GLFW_KEY_F7) == GLFW_PRESS)
+		max_framerate += 1;
 	
 	if (data->fov < 5.0f) data->fov = 5.0f;
 	if (data->fov > 170.0f) data->fov = 170.0f;
@@ -130,6 +147,7 @@ int main(void)
     if (!glfwInit())
         return -1;
 
+	glfwWindowHint(GLFW_VISIBLE, 0);
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(WIDTH, HEIGHT, "Hello World", NULL, NULL);
     if (!window)
@@ -137,6 +155,8 @@ int main(void)
         glfwTerminate();
         return -1;
     }
+	glfwSetWindowPos(window, 1920-WIDTH- 50, 50);
+	glfwShowWindow(window);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, cursor_position_callback);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -202,8 +222,14 @@ int main(void)
     {
 		curFrame = glfwGetTime();
 		deltaTime = curFrame - lastFrame;
+		
+		if (deltaTime > 1.0 / max_framerate)
+		{
 		lastFrame = curFrame;
 		keyboard_input(window, deltaTime);
+		
+		if (print_framerate)
+			cout << 1.0 / deltaTime << endl;
 				
 		/* compute bullets and enemies collisions */
 		list<vector<Enemy>::iterator> killed;
@@ -288,6 +314,7 @@ int main(void)
 
         /* Poll for and process events */
         glfwPollEvents();
+		}
     }
 
     glfwTerminate();

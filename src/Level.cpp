@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#define EPSILON 0.01
+
 Level::Level(const char *pPBMFile)
 {
 	vector<Vertex> walls_vertices;
@@ -145,6 +147,8 @@ glm::vec3 Level::intersectWall(glm::vec3 &pStart, glm::vec3 &pEnd)
 {
 	glm::vec3 ret;
 	glm::vec2 p1, p2, p3;
+	int x,y;
+	
 	p1.x = pStart.x;
 	p1.y = pStart.z;
 	p2.x = pEnd.x;
@@ -156,20 +160,27 @@ glm::vec3 Level::intersectWall(glm::vec3 &pStart, glm::vec3 &pEnd)
 	int next_x = (int)(p1.x + ((dx < 0) ? 0.0 : 1.0));
 	int next_y = (int)(p1.y + ((dy < 0) ? 0.0 : 1.0));
 	
+	/* for each cell crossed by the vector */
 	while ( ((dx < 0 && p1.x > p2.x) || (dx >= 0 && p1.x < p2.x))
        	 || ((dy < 0 && p1.y > p2.y) || (dy >= 0 && p1.y < p2.y)))
 	{
-		if (dx == 0.0)
+		if (fabs(dx) < EPSILON)
 		{
 			p3.x = p1.x;
 			p3.y = next_y;
 			next_y += (dy < 0) ? -1 : 1;
+			
+			x = (int)(p3.x + mW / 2);
+			y = (int)(p3.y + mH / 2) - (dy < 0 ? 1 : 0);
 		}
-		else if (dy == 0.0)
+		else if (fabs(dy) == 0.0)
 		{
 			p3.x = next_x;
 			p3.y = p1.y;
 			next_x += (dx < 0) ? -1 : 1;
+			
+			x = (int)(p3.x + mW / 2) - (dx < 0 ? 1 : 0);
+			y = (int)(p3.y + mH / 2);
 		}
 		else 
 		{
@@ -191,29 +202,21 @@ glm::vec3 Level::intersectWall(glm::vec3 &pStart, glm::vec3 &pEnd)
 				p3.x = (dx / dy) * (p3.y - p1.y) + p1.x;
 				
 				next_y += (dy < 0) ? -1 : 1;
+				
+				x = (int)(p3.x + mW / 2);
+				y = (int)(p3.y + mH / 2) - (dy < 0 ? 1 : 0);
 			}
 			else
 			{
 				next_x += (dx < 0) ? -1 : 1;
+				x = (int)(p3.x + mW / 2) - (dx < 0 ? 1 : 0);
+				y = (int)(p3.y + mH / 2);
 			}
 		}
 		
-		/* cell coordinates */
-		int x = (int)p3.x;
-		int y = (int)p3.y;
-		
-		if (dx < 0 && (float)x == p3.x)
-			x--;
-		if (dy < 0 && (float)y == p3.y)
-			y--;
-		
-		x += mW / 2;
-		y += mH / 2;
+		/* if new cell is a wall */
 		if (x < 0 || y < 0 || x >= mW || y >= mH || mMap[y * mW + x] == '1')
 		{
-			// if (dx < 0 && dy < 0)
-				// p3 = p1;
-				
 			break;
 		}
 		p1 = p3;
